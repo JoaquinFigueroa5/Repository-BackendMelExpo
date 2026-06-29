@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ToolStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  RESERVED
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+  OVERDUE
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  COORDINATOR
+  ADMIN
+}
+
+enum NotificationType {
+  ALERT
+  REMINDER
+  INFO
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  carnet    String?
+  phone     String?
+  photo     String?
+  career    String
+  workshop  String?
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requests         Request[]
+  requestReviews   RequestReview[]
+  loans            Loan[]
+  favorites        Favorite[]
+  notifications    Notification[]
+  movements        Movement[]
+}
+
+model Career {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  color String?
+  icon  String?
+
+  workshopAssignments WorkshopCareer[]
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  icon  String?
+  color String?
+
+  tools Tool[]
+}
+
+model Workshop {
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  description String?
+  location    String?
+
+  careers WorkshopCareer[]
+}
+
+model WorkshopCareer {
+  workshopId Int
+  careerName String
+
+  workshop   Workshop @relation(fields: [workshopId], references: [id])
+  career     Career   @relation(fields: [careerName], references: [name])
+
+  @@id([workshopId, careerName])
+}
+
+model Tool {
+  id        Int        @id @default(autoincrement())
+  name      String
+  cat       String
+  code      String     @unique
+  desc      String?
+  brand     String?
+  location  String
+  totalQty  Int
+  available Int
+  status    ToolStatus @default(AVAILABLE)
+  image     String?
+  maxDays   Int        @default(7)
+  specs     Json?
+  careers   Json
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  categoryId Int?
+  category   Category?    @relation(fields: [categoryId], references: [id])
+  requests   RequestItem[]
+  loans      Loan[]
+  favorites  Favorite[]
+  movements  Movement[]
+}
+
+model Request {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  status    RequestStatus @default(PENDING)
+  reqDate   DateTime      @default(now())
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user      User          @relation(fields: [userId], references: [id])
+  items     RequestItem[]
+  review    RequestReview?
+  loan      Loan?
+}
+
+model RequestItem {
+  id        Int      @id @default(autoincrement())
+  requestId Int
+  toolId    Int
+  qty       Int
+  startDate DateTime
+  dueDate   DateTime
+
+  request   Request  @relation(fields: [requestId], references: [id])
+  tool      Tool     @relation(fields: [toolId], references: [id])
+}
+
+model RequestReview {
+  id            Int           @id @default(autoincrement())
+  requestId     Int           @unique
+  coordinatorId Int
+  action        RequestStatus
+  comment       String?
+  reviewedAt    DateTime      @default(now())
+
+  request       Request       @relation(fields: [requestId], references: [id])
+  coordinator   User          @relation(fields: [coordinatorId], references: [id])
+}
+
+model Loan {
+  id         Int        @id @default(autoincrement())
+  requestId  Int?       @unique
+  userId     Int
+  toolId     Int
+  qty        Int
+  loanDate   DateTime
+  dueDate    DateTime
+  returnDate DateTime?
+  status     LoanStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id])
+  tool       Tool       @relation(fields: [toolId], references: [id])
+  request    Request?   @relation(fields: [requestId], references: [id])
+  movements  Movement[]
+}
+
+model Movement {
+  id          Int      @id @default(autoincrement())
+  loanId      Int
+  userId      Int?
+  toolId      Int
+  type        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  loan        Loan     @relation(fields: [loanId], references: [id])
+  user        User?    @relation(fields: [userId], references: [id])
+  tool        Tool     @relation(fields: [toolId], references: [id])
+}
+
+model Favorite {
+  userId    Int
+  toolId    Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  tool      Tool     @relation(fields: [toolId], references: [id])
+
+  @@id([userId, toolId])
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  read      Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user      User             @relation(fields: [userId], references: [id])
+}

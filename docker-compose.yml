@@ -1,0 +1,33 @@
+services:
+  db:
+    image: mysql:8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: REMA
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "mysql://root:root@db:3306/REMA"
+      JWT_SECRET: "rema-jwt-secret-key-change-in-production"
+      JWT_EXPIRES_IN: "24h"
+      NODE_ENV: "production"
+      FRONTEND_URL: "http://localhost:5173"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
