@@ -11,6 +11,7 @@ export class ToolsController {
         career: req.query.career as string | undefined,
         search: req.query.search as string | undefined,
         status: req.query.status as any,
+        userRole: req.userRole,
       })
       res.json(ok(tools))
     } catch (err) {

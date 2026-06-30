@@ -7,6 +7,7 @@ import userRoutes from './user.routes'
 import adminRoutes from './admin.routes'
 import reportsRoutes from './reports.routes'
 import notificationsRoutes from './notifications.routes'
+import incidentRoutes from './incident.routes'
 
 const router = Router()
 
@@ -18,5 +19,6 @@ router.use('/user', userRoutes)
 router.use('/admin', adminRoutes)
 router.use('/reports', reportsRoutes)
 router.use('/notifications', notificationsRoutes)
+router.use('/incidents', incidentRoutes)
 
 export default router

@@ -58,6 +58,7 @@ model User {
   loans            Loan[]
   favorites        Favorite[]
   notifications    Notification[]
+  incidents        Incident[]
   movements        Movement[]
 }
 
@@ -113,6 +114,7 @@ model Tool {
   maxDays   Int        @default(7)
   specs     Json?
   careers   Json
+  minRole   String    @default("STUDENT")
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
@@ -121,6 +123,7 @@ model Tool {
   requests   RequestItem[]
   loans      Loan[]
   favorites  Favorite[]
+  incidents  Incident[]
   movements  Movement[]
 }
 
@@ -214,6 +217,25 @@ model Favorite {
   tool      Tool     @relation(fields: [toolId], references: [id])
 
   @@id([userId, toolId])
+}
+
+model Incident {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  toolId      Int?
+  title       String
+  description String
+  severity    String    @default("low") // low, medium, high, critical
+  status      String    @default("open") // open, in_progress, resolved, closed
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  resolvedAt  DateTime?
+  resolution  String?
+
+  user        User      @relation(fields: [userId], references: [id])
+  tool        Tool?     @relation(fields: [toolId], references: [id])
+
+  @@map("incidents")
 }
 
 model Notification {

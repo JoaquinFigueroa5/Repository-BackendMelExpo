@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma'
 import { signToken } from '../utils/jwt'
 import { AppError } from '../errors/AppError'
 import { LoginInput, RegisterInput, UserSafe } from '../types'
+import { emailService } from './email.service'
 
 function toUserSafe(user: any): UserSafe {
   const { password, ...safe } = user
@@ -11,7 +12,7 @@ function toUserSafe(user: any): UserSafe {
 }
 
 export class AuthService {
-  async register(data: RegisterInput): Promise<{ token: string; user: UserSafe; code?: string }> {
+  async register(data: RegisterInput): Promise<{ token: string; user: UserSafe }> {
     const existing = await prisma.user.findUnique({ where: { email: data.email } })
     if (existing) throw AppError.conflict('El correo ya está registrado')
 
@@ -33,7 +34,9 @@ export class AuthService {
       data: { email: data.email, code, expiresAt },
     })
 
-    return { token, user: toUserSafe(user), code }
+    await emailService.sendVerificationCode(data.email, code)
+
+    return { token, user: toUserSafe(user) }
   }
 
   async login(data: LoginInput): Promise<{ token: string; user: UserSafe }> {
@@ -67,7 +70,7 @@ export class AuthService {
     await prisma.user.update({ where: { id: userId }, data: { password: hashed } })
   }
 
-  async forgotPassword(email: string): Promise<{ message: string; code?: string }> {
+  async forgotPassword(email: string): Promise<{ message: string }> {
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user) throw AppError.notFound('Usuario con ese correo')
 
@@ -78,7 +81,9 @@ export class AuthService {
       data: { email, code, expiresAt },
     })
 
-    return { message: 'Código enviado al correo', code }
+    await emailService.sendPasswordResetCode(email, code)
+
+    return { message: 'Código enviado al correo' }
   }
 
   async verifyCode(email: string, code: string): Promise<{ valid: boolean }> {

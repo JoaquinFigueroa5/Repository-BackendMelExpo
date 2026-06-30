@@ -7,7 +7,7 @@ import { createUserSchema, updateUserSchema, careerSchema, categorySchema, works
 
 const router = Router()
 
-router.use(auth, requireRole('COORDINATOR', 'ADMIN'))
+router.use(auth, requireRole('ADMIN'))
 
 router.get('/stats', (req, res, next) => adminController.stats(req, res, next))
 

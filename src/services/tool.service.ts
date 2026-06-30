@@ -1,10 +1,10 @@
-import { Prisma, ToolStatus } from '@prisma/client'
+import { Prisma, ToolStatus, UserRole } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { AppError } from '../errors/AppError'
 import { ToolFilters, CreateToolInput, UpdateToolInput } from '../types'
 
 export class ToolService {
-  async list(filters: ToolFilters) {
+  async list(filters: ToolFilters & { userRole?: string }) {
     const where: Prisma.ToolWhereInput = {}
 
     if (filters.cat) where.cat = filters.cat
@@ -17,6 +17,13 @@ export class ToolService {
     }
     if (filters.career) {
       where.careers = { array_contains: [filters.career] }
+    }
+
+    const role = filters.userRole || 'STUDENT'
+    if (role === 'STUDENT') {
+      where.minRole = 'STUDENT'
+    } else if (role === 'TEACHER') {
+      where.minRole = { in: ['STUDENT', 'TEACHER'] }
     }
 
     return prisma.tool.findMany({
@@ -60,6 +67,7 @@ export class ToolService {
         maxDays: data.maxDays ?? 7,
         specs: data.specs ?? Prisma.JsonNull,
         careers: data.careers,
+        minRole: data.minRole ?? 'STUDENT',
         categoryId: data.categoryId,
       },
       include: { category: true },

@@ -25,6 +25,11 @@ services:
       JWT_EXPIRES_IN: "24h"
       NODE_ENV: "production"
       FRONTEND_URL: "http://localhost:5173"
+      EMAIL_HOST: "smtp-relay.brevo.com"
+      EMAIL_PORT: 587
+      EMAIL_USER: "${EMAIL_USER}"
+      EMAIL_PASS: "${EMAIL_PASS}"
+      EMAIL_FROM: "noreply@rema.edu.gt"
     depends_on:
       db:
         condition: service_healthy

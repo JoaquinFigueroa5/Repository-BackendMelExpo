@@ -29,7 +29,6 @@ export interface RegisterInput {
 export interface AuthResponse {
   token: string
   user: UserSafe
-  code?: string
 }
 
 export interface ToolFilters {
@@ -52,6 +51,7 @@ export interface CreateToolInput {
   maxDays?: number
   specs?: Record<string, string>
   careers: string[]
+  minRole?: string
   categoryId?: number
 }
 
@@ -68,15 +68,17 @@ export interface UpdateToolInput {
   maxDays?: number
   specs?: Record<string, string>
   careers?: string[]
+  minRole?: string
   categoryId?: number
 }
 
 export interface CreateRequestInput {
-  toolId: number
-  qty: number
-  startDate: string
-  endDate: string
+  toolId?: number
+  qty?: number
+  startDate?: string
+  endDate?: string
   notes?: string
+  items?: { toolId: number; qty: number; startDate: string; endDate: string }[]
 }
 
 export interface CreateLoanInput {
@@ -118,4 +120,19 @@ export interface Delays {
 export interface ActiveUser {
   name: string
   loanCount: number
+}
+
+export interface CreateIncidentInput {
+  toolId?: number
+  title: string
+  description: string
+  severity?: 'low' | 'medium' | 'high' | 'critical'
+}
+
+export interface UpdateIncidentInput {
+  title?: string
+  description?: string
+  severity?: 'low' | 'medium' | 'high' | 'critical'
+  status?: 'open' | 'in_progress' | 'resolved' | 'closed'
+  resolution?: string
 }

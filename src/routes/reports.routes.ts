@@ -5,7 +5,7 @@ import { requireRole } from '../middleware/roles'
 
 const router = Router()
 
-router.use(auth, requireRole('COORDINATOR', 'ADMIN'))
+router.use(auth, requireRole('ADMIN'))
 
 router.get('/top-tools', (req, res, next) => reportsController.topTools(req, res, next))
 router.get('/loans-by-month', (req, res, next) => reportsController.loansByMonth(req, res, next))

@@ -29,17 +29,30 @@ export class RequestService {
     if (!user) throw AppError.notFound('Usuario')
     if (user.role !== 'STUDENT') throw AppError.forbidden('Solo estudiantes pueden crear solicitudes')
 
-    const tool = await prisma.tool.findUnique({ where: { id: data.toolId } })
-    if (!tool) throw AppError.notFound('Herramienta')
+    const items = data.items || [{
+      toolId: data.toolId!,
+      qty: data.qty!,
+      startDate: data.startDate!,
+      endDate: data.endDate!,
+    }]
 
-    await toolService.validateAvailability(data.toolId, data.qty)
-    await toolService.validateCareerAccess(data.toolId, user.career)
+    const toolNames: string[] = []
 
-    const startDate = new Date(data.startDate)
-    const dueDate = new Date(data.endDate)
-    const daysDiff = Math.ceil((dueDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-    if (daysDiff > tool.maxDays) {
-      throw AppError.badRequest(`El período máximo es de ${tool.maxDays} días`)
+    for (const item of items) {
+      const tool = await prisma.tool.findUnique({ where: { id: item.toolId } })
+      if (!tool) throw AppError.notFound(`Herramienta #${item.toolId}`)
+
+      await toolService.validateAvailability(item.toolId, item.qty)
+      await toolService.validateCareerAccess(item.toolId, user.career)
+
+      const startDate = new Date(item.startDate)
+      const dueDate = new Date(item.endDate)
+      const daysDiff = Math.ceil((dueDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      if (daysDiff > tool.maxDays) {
+        throw AppError.badRequest(`"${tool.name}" tiene un período máximo de ${tool.maxDays} días`)
+      }
+
+      toolNames.push(tool.name)
     }
 
     const request = await prisma.request.create({
@@ -48,12 +61,12 @@ export class RequestService {
         reqDate: new Date(),
         notes: data.notes,
         items: {
-          create: {
-            toolId: data.toolId,
-            qty: data.qty,
-            startDate,
-            dueDate,
-          },
+          create: items.map(item => ({
+            toolId: item.toolId,
+            qty: item.qty,
+            startDate: new Date(item.startDate),
+            dueDate: new Date(item.endDate),
+          })),
         },
       },
       include: {
@@ -66,7 +79,7 @@ export class RequestService {
 
     await notificationService.notifyCoordinators(
       'Nueva solicitud de préstamo',
-      `El estudiante ${user.name} solicita "${tool.name}" (${data.qty} unidad(es))`,
+      `El estudiante ${user.name} solicita ${items.length} equipo(s): ${toolNames.join(', ')}`,
       '/admin/requests'
     )
 

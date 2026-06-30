@@ -13,6 +13,7 @@ export const createToolSchema = z.object({
   maxDays: z.number().int().positive().default(7),
   specs: z.record(z.string()).optional(),
   careers: z.array(z.string()).min(1, 'Al menos una carrera requerida'),
+  minRole: z.enum(['STUDENT', 'TEACHER', 'COORDINATOR']).default('STUDENT'),
   categoryId: z.number().int().positive().optional(),
 })
 
