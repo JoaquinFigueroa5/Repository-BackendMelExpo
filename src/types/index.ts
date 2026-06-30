@@ -29,6 +29,7 @@ export interface RegisterInput {
 export interface AuthResponse {
   token: string
   user: UserSafe
+  code?: string
 }
 
 export interface ToolFilters {

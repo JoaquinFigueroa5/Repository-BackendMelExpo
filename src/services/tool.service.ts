@@ -122,7 +122,6 @@ export class ToolService {
     if (status === 'MAINTENANCE' || status === 'RESERVED') {
       await prisma.movement.create({
         data: {
-          loanId: 0,
           toolId: id,
           type: status,
           description: `Estado cambiado a ${status}`,

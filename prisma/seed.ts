@@ -260,6 +260,189 @@ async function main() {
     })
   }
 
+  // ────────────────────────────────────────────────────────────────
+  // 10. Más estudiantes (password: 123456, mismo hash)
+  // ────────────────────────────────────────────────────────────────
+  await prisma.user.createMany({
+    data: [
+      {
+        name: 'María López',
+        email: 'maria.lopez@emilianisomascos.edu.gt',
+        password,
+        career: 'Mecánica Automotriz',
+        role: 'STUDENT',
+        carnet: '2024-67890',
+      },
+      {
+        name: 'Pedro Ramírez',
+        email: 'pedro.ramirez@emilianisomascos.edu.gt',
+        password,
+        career: 'Electricidad y Electrónica',
+        role: 'STUDENT',
+        carnet: '2024-54321',
+      },
+    ],
+    skipDuplicates: true,
+  })
+
+  // ────────────────────────────────────────────────────────────────
+  // 11. PasswordReset de prueba (código: 123456)
+  // ────────────────────────────────────────────────────────────────
+  await prisma.passwordReset.deleteMany({ where: { email: 'clarence.hernandez@emilianisomascos.edu.gt' } })
+  await prisma.passwordReset.create({
+    data: {
+      email: 'clarence.hernandez@emilianisomascos.edu.gt',
+      code: '123456',
+      expiresAt: new Date(Date.now() + 3600_000),
+      used: false,
+    },
+  })
+
+  // ────────────────────────────────────────────────────────────────
+  // 12. Más préstamos
+  // ────────────────────────────────────────────────────────────────
+  const maria = await prisma.user.findFirst({ where: { email: 'maria.lopez@emilianisomascos.edu.gt' } })
+  const pedro = await prisma.user.findFirst({ where: { email: 'pedro.ramirez@emilianisomascos.edu.gt' } })
+  const jackTool = await prisma.tool.findFirst({ where: { code: 'MEC-001' } })
+  const manometer = await prisma.tool.findFirst({ where: { code: 'MEC-012' } })
+  const multimeterTool = await prisma.tool.findFirst({ where: { code: 'ELE-002' } })
+  const drillTool = await prisma.tool.findFirst({ where: { code: 'ELE-006' } })
+
+  if (maria && jackTool && manometer) {
+    const existing = await prisma.loan.findFirst({ where: { userId: maria.id, toolId: jackTool.id, status: 'ACTIVE' } })
+    if (!existing) {
+      const loan = await prisma.loan.create({
+        data: {
+          userId: maria.id, toolId: jackTool.id, qty: 1,
+          loanDate: new Date('2026-06-22'), dueDate: new Date('2026-06-29'),
+          status: 'ACTIVE',
+        },
+      })
+      await prisma.movement.create({ data: { loanId: loan.id, userId: maria.id, toolId: jackTool.id, type: 'LOAN', description: 'Préstamo de gato hidráulico - María' } })
+    }
+    const returned = await prisma.loan.findFirst({ where: { userId: maria.id, toolId: manometer.id, status: 'RETURNED' } })
+    if (!returned) {
+      const loan = await prisma.loan.create({
+        data: {
+          userId: maria.id, toolId: manometer.id, qty: 1,
+          loanDate: new Date('2026-06-15'), dueDate: new Date('2026-06-22'),
+          returnDate: new Date('2026-06-21'), status: 'RETURNED',
+        },
+      })
+      await prisma.movement.create({ data: { loanId: loan.id, userId: maria.id, toolId: manometer.id, type: 'LOAN', description: 'Préstamo de manómetro - María' } })
+      await prisma.movement.create({ data: { loanId: loan.id, userId: maria.id, toolId: manometer.id, type: 'RETURN', description: 'Devuelto el 21/06/2026' } })
+    }
+  }
+
+  if (pedro && multimeterTool) {
+    const existing = await prisma.loan.findFirst({ where: { userId: pedro.id, toolId: multimeterTool.id, status: 'ACTIVE' } })
+    if (!existing) {
+      const loan = await prisma.loan.create({
+        data: {
+          userId: pedro.id, toolId: multimeterTool.id, qty: 1,
+          loanDate: new Date('2026-06-25'), dueDate: new Date('2026-06-30'),
+          status: 'ACTIVE',
+        },
+      })
+      await prisma.movement.create({ data: { loanId: loan.id, userId: pedro.id, toolId: multimeterTool.id, type: 'LOAN', description: 'Préstamo de multímetro - Pedro' } })
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // 13. Más solicitudes
+  // ────────────────────────────────────────────────────────────────
+  if (maria && jackTool) {
+    const existing = await prisma.request.findFirst({ where: { userId: maria.id, status: 'PENDING' } })
+    if (!existing) {
+      await prisma.request.create({
+        data: {
+          userId: maria.id, status: 'PENDING',
+          reqDate: new Date('2026-06-26'),
+          notes: 'Para prácticas de taller mecánico',
+          items: { create: { toolId: jackTool.id, qty: 1, startDate: new Date('2026-06-29'), dueDate: new Date('2026-07-03') } },
+        },
+      })
+    }
+  }
+
+  if (pedro && drillTool) {
+    const existing = await prisma.request.findFirst({ where: { userId: pedro.id, status: 'PENDING' } })
+    if (!existing) {
+      await prisma.request.create({
+        data: {
+          userId: pedro.id, status: 'PENDING',
+          reqDate: new Date('2026-06-27'),
+          notes: 'Necesito el taladro para proyecto de electrónica',
+          items: { create: { toolId: drillTool.id, qty: 1, startDate: new Date('2026-06-30'), dueDate: new Date('2026-07-04') } },
+        },
+      })
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // 14. Más favoritos
+  // ────────────────────────────────────────────────────────────────
+  const keyboardTool = await prisma.tool.findFirst({ where: { code: 'COM-003' } })
+  const powerSupply = await prisma.tool.findFirst({ where: { code: 'ELE-004' } })
+
+  if (student && keyboardTool) {
+    await prisma.favorite.createMany({
+      data: [{ userId: student.id, toolId: keyboardTool.id }],
+      skipDuplicates: true,
+    })
+  }
+
+  if (maria && jackTool && manometer) {
+    await prisma.favorite.createMany({
+      data: [
+        { userId: maria.id, toolId: jackTool.id },
+        { userId: maria.id, toolId: manometer.id },
+      ],
+      skipDuplicates: true,
+    })
+  }
+
+  if (pedro && multimeterTool && powerSupply) {
+    await prisma.favorite.createMany({
+      data: [
+        { userId: pedro.id, toolId: multimeterTool.id },
+        { userId: pedro.id, toolId: powerSupply.id },
+      ],
+      skipDuplicates: true,
+    })
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // 15. Más notificaciones
+  // ────────────────────────────────────────────────────────────────
+  if (student) {
+    await prisma.notification.createMany({
+      data: [
+        { userId: student.id, title: 'Solicitud Aprobada', message: 'Tu solicitud de Laptop Lenovo ThinkPad fue aprobada', type: 'INFO' },
+        { userId: student.id, title: 'Préstamo Vencido', message: 'El gato hidráulico está vencido desde el 08/06/2026', type: 'ALERT', read: true },
+      ],
+      skipDuplicates: true,
+    })
+  }
+
+  if (maria) {
+    const existingNotif = await prisma.notification.findFirst({ where: { userId: maria.id, title: 'Bienvenido a REMA' } })
+    if (!existingNotif) {
+      await prisma.notification.createMany({
+        data: [
+          { userId: maria.id, title: 'Bienvenido a REMA', message: 'Tu cuenta ha sido creada exitosamente', type: 'INFO' },
+          { userId: maria.id, title: 'Recordatorio', message: 'Tu préstamo de gato hidráulico vence el 29/06/2026', type: 'REMINDER', link: '/account/loans' },
+        ],
+      })
+    }
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  // 16. Actualizar status de tools para variedad en dashboard
+  // ────────────────────────────────────────────────────────────────
+  await prisma.tool.updateMany({ where: { code: 'MEC-002' }, data: { status: 'MAINTENANCE' } })
+  await prisma.tool.updateMany({ where: { code: 'ELE-003' }, data: { status: 'RESERVED' } })
+
   console.log('Seed completado exitosamente')
 }
 
