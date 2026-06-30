@@ -65,6 +65,7 @@ export class AuthController {
       next(err)
     }
   }
+
 }
 
 export const authController = new AuthController()

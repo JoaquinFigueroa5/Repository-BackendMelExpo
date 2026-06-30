@@ -37,7 +37,6 @@ export class EmailService {
       console.warn(`[EmailService] No se pudo enviar email a ${email} — revisa credenciales SMTP`)
     }
   }
-
   async sendPasswordResetCode(email: string, code: string): Promise<void> {
     try {
       await this.transporter.sendMail({
